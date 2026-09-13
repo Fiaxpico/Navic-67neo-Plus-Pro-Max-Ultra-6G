@@ -54,6 +54,8 @@ import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.queue.components.QueueScreenItem
 import paige.navic.ui.screens.queue.viewmodels.QueueViewModel
 import paige.navic.di.LocalSheetState
+import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.models.settings.QueueInfoType
 import paige.navic.ui.util.draggableItemsIndexed
 import paige.navic.ui.util.rememberDraggableListState
 import kotlin.time.DurationUnit
@@ -85,8 +87,19 @@ fun QueueScreen() {
 		}
 	}
 
+	val preferenceManager = koinInject<PreferenceManager>()
+	val queueInfoType = preferenceManager.queueInfoType
+
+
+
+
 	val totalDurationText = remember(queue) {
-		val totalSeconds = queue.sumOf { it.duration.toInt(DurationUnit.SECONDS) }
+		var totalSeconds = queue.sumOf { it.duration.toInt(DurationUnit.SECONDS) }
+
+		if (queueInfoType == QueueInfoType.Remaining) {
+			totalSeconds -= queue.take(playerState.currentIndex).sumOf { it.duration.toInt(
+				DurationUnit.SECONDS) } + playerState.progress.toInt() }
+
 
 		val hours = totalSeconds / 3600
 		val minutes = (totalSeconds % 3600) / 60
@@ -104,11 +117,16 @@ fun QueueScreen() {
 			append("${seconds}s")
 		}
 	}
+	var songs_text = queue.size
 
+	if (queueInfoType == QueueInfoType.Remaining) {
+		songs_text -= queue.indexOf(playerState.currentSong)
+
+	}
 	val songsText = pluralStringResource(
 		Res.plurals.count_songs,
-		queue.size,
-		queue.size
+		songs_text,
+		songs_text
 	)
 
 	val sheetState = LocalSheetState.current
