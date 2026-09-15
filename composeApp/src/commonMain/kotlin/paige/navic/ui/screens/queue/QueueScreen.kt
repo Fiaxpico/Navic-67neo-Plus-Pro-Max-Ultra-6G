@@ -46,6 +46,9 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.di.LocalNavStack
+import paige.navic.di.LocalSheetState
+import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.models.settings.QueueInfoType
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.PlaylistRemove
 import paige.navic.shared.MediaPlayerViewModel
@@ -53,12 +56,9 @@ import paige.navic.ui.components.common.ContentUnavailable
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.queue.components.QueueScreenItem
 import paige.navic.ui.screens.queue.viewmodels.QueueViewModel
-import paige.navic.di.LocalSheetState
-import paige.navic.domain.manager.PreferenceManager
-import paige.navic.domain.models.settings.QueueInfoType
 import paige.navic.ui.util.draggableItemsIndexed
 import paige.navic.ui.util.rememberDraggableListState
-import kotlin.time.DurationUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -88,46 +88,52 @@ fun QueueScreen() {
 	}
 
 	val preferenceManager = koinInject<PreferenceManager>()
-	val queueInfoType = preferenceManager.queueInfoType
 
+	val songCountText = when (preferenceManager.queueInfoType) {
+		QueueInfoType.Full -> pluralStringResource(
+			Res.plurals.count_songs,
+			queue.size,
+			queue.size
+		)
 
+		QueueInfoType.Remaining -> pluralStringResource(
+			Res.plurals.count_songs,
+			queue.size - playerState.currentIndex,
+			queue.size - playerState.currentIndex
+		)
+	}
+	val durationText = remember(queue, playerState.progress, playerState.currentIndex) {
+		var totalMillis = queue.sumOf { it.duration.inWholeMilliseconds } // ms because precision
 
+		if (preferenceManager.queueInfoType == QueueInfoType.Remaining) {
+			// duration of all songs that are before the current index
+			val pastMillis = queue
+				.take(playerState.currentIndex)
+				.sumOf { it.duration.inWholeMilliseconds }
 
-	val totalDurationText = remember(queue) {
-		var totalSeconds = queue.sumOf { it.duration.toInt(DurationUnit.SECONDS) }
+			// elapsed duration of the current index
+			val currentTrack = queue.getOrNull(playerState.currentIndex)
+			val elapsedCurrentSeconds =
+				(currentTrack?.duration?.inWholeMilliseconds ?: 0L) * playerState.progress
 
-		if (queueInfoType == QueueInfoType.Remaining) {
-			totalSeconds -= queue.take(playerState.currentIndex).sumOf { it.duration.toInt(
-				DurationUnit.SECONDS) } + playerState.progress.toInt() }
+			// deduct previous durations plus current elapsed duration
+			totalMillis -= pastMillis + elapsedCurrentSeconds.toLong()
 
+			// wow, that's confusing as shit for some reason
+		}
 
+		// then we format manually because Duration.toString() doesn't let u disable decimals
+		val totalSeconds = totalMillis.milliseconds.inWholeSeconds
 		val hours = totalSeconds / 3600
 		val minutes = (totalSeconds % 3600) / 60
 		val seconds = totalSeconds % 60
 
 		buildString {
-			if (hours > 0) {
-				append("${hours}h ")
-			}
-
-			if (minutes > 0 || hours > 0) {
-				append("${minutes}m ")
-			}
-
+			if (hours > 0) append("${hours}h ")
+			if (minutes > 0 || hours > 0) append("${minutes}m ")
 			append("${seconds}s")
 		}
 	}
-	var songs_text = queue.size
-
-	if (queueInfoType == QueueInfoType.Remaining) {
-		songs_text -= queue.indexOf(playerState.currentSong)
-
-	}
-	val songsText = pluralStringResource(
-		Res.plurals.count_songs,
-		songs_text,
-		songs_text
-	)
 
 	val sheetState = LocalSheetState.current
 	val closeScope = rememberCoroutineScope()
@@ -155,7 +161,7 @@ fun QueueScreen() {
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Text(
-					text = "$songsText • $totalDurationText",
+					text = "$songCountText • $durationText",
 					style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
