@@ -17,10 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,18 +28,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
-import com.kyant.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.launch
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_clear_queue
+import navic.composeapp.generated.resources.count_remaining_songs
 import navic.composeapp.generated.resources.count_songs
+import navic.composeapp.generated.resources.info_duration_left
 import navic.composeapp.generated.resources.info_no_queue
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -56,6 +56,7 @@ import paige.navic.ui.components.common.ContentUnavailable
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.queue.components.QueueScreenItem
 import paige.navic.ui.screens.queue.viewmodels.QueueViewModel
+import paige.navic.ui.theme.defaultFont
 import paige.navic.ui.util.draggableItemsIndexed
 import paige.navic.ui.util.rememberDraggableListState
 import kotlin.time.Duration.Companion.milliseconds
@@ -97,7 +98,7 @@ fun QueueScreen() {
 		)
 
 		QueueInfoType.Remaining -> pluralStringResource(
-			Res.plurals.count_songs,
+			Res.plurals.count_remaining_songs,
 			queue.size - playerState.currentIndex,
 			queue.size - playerState.currentIndex
 		)
@@ -134,6 +135,10 @@ fun QueueScreen() {
 			append("${seconds}s")
 		}
 	}
+	val formattedDurationText = when(preferenceManager.queueInfoType) {
+		QueueInfoType.Full -> durationText
+		QueueInfoType.Remaining -> stringResource(Res.string.info_duration_left, durationText)
+	}
 
 	val sheetState = LocalSheetState.current
 	val closeScope = rememberCoroutineScope()
@@ -147,11 +152,7 @@ fun QueueScreen() {
 		}
 	}
 
-	Column(
-		modifier = Modifier
-			.fillMaxSize()
-			.clip(ContinuousRoundedRectangle(topStart = 16.dp, topEnd = 16.dp))
-	) {
+	Column(modifier = Modifier.fillMaxSize()) {
 		if (queue.isNotEmpty()) {
 			Row(
 				modifier = Modifier
@@ -161,11 +162,13 @@ fun QueueScreen() {
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Text(
-					text = "$songCountText • $durationText",
-					style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+					text = "$songCountText • $formattedDurationText",
+					style = MaterialTheme.typography.titleMedium,
+					fontWeight = FontWeight.SemiBold,
+					fontFamily = defaultFont(round = 100f),
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
-				TextButton(
+				FilledTonalButton(
 					onClick = {
 						haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 						player.clearQueue()

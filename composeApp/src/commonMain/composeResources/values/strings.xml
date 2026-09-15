@@ -271,6 +271,11 @@
 		<item quantity="other">%1$d songs</item>
 	</plurals>
 
+	<plurals name="count_remaining_songs">
+		<item quantity="one">%1$d song left</item>
+		<item quantity="other">%1$d songs left</item>
+	</plurals>
+
 	<plurals name="count_albums">
 		<item quantity="one">%1$d album</item>
 		<item quantity="other">%1$d albums</item>
@@ -486,4 +491,5 @@
 	<string name="info_equaliser_unsupported">Your device does not support this feature.</string>
 	<string name="info_equaliser_mode_not_builtin">Please adjust the external equaliser using its dedicated app.</string>
 	<string name="info_lyric_provider_disclaimer">Enabling LRCLIB and/or LyricsPlus will make requests to external and unaffiliated web services.</string>
+	<string name="info_duration_left">%1$s left</string>
 </resources>
