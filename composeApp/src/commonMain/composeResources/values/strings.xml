@@ -251,7 +251,6 @@
 	<string name="option_mini_player_progress_style_visible">Visible</string>
 	<string name="option_mini_player_progress_style_seekable">Seekable</string>
 
-	<string name="title_queue">Queue settings</string>
 	<string name="option_queue_info_type">Queue information</string>
 	<string name="option_queue_info_type_remining">Show songs/time remaining</string>
 	<string name="option_queue_info_type_full">Show songs/time of the whole queue</string>

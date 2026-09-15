@@ -1,5 +1,6 @@
 package paige.navic.ui.screens.queue
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -135,7 +137,7 @@ fun QueueScreen() {
 			append("${seconds}s")
 		}
 	}
-	val formattedDurationText = when(preferenceManager.queueInfoType) {
+	val formattedDurationText = when (preferenceManager.queueInfoType) {
 		QueueInfoType.Full -> durationText
 		QueueInfoType.Remaining -> stringResource(Res.string.info_duration_left, durationText)
 	}
@@ -158,16 +160,27 @@ fun QueueScreen() {
 				modifier = Modifier
 					.fillMaxWidth()
 					.padding(horizontal = 24.dp, vertical = 8.dp),
-				horizontalArrangement = Arrangement.SpaceBetween,
-				verticalAlignment = Alignment.CenterVertically
+				horizontalArrangement = Arrangement.SpaceBetween
 			) {
-				Text(
-					text = "$songCountText • $formattedDurationText",
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.SemiBold,
-					fontFamily = defaultFont(round = 100f),
-					color = MaterialTheme.colorScheme.onSurfaceVariant
-				)
+				Row(
+					modifier = Modifier.height(36.dp).clickable {
+						val newValue = when (preferenceManager.queueInfoType) {
+							QueueInfoType.Full -> QueueInfoType.Remaining
+							QueueInfoType.Remaining -> QueueInfoType.Full
+						}
+						preferenceManager.queueInfoType = newValue
+					},
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Text(
+						text = "$songCountText • $formattedDurationText",
+						style = MaterialTheme.typography.titleMedium,
+						fontWeight = FontWeight.SemiBold,
+						fontFamily = defaultFont(round = 100f),
+						color = MaterialTheme.colorScheme.onSurfaceVariant,
+						textAlign = TextAlign.Center
+					)
+				}
 				FilledTonalButton(
 					onClick = {
 						haptic.performHapticFeedback(HapticFeedbackType.LongPress)
